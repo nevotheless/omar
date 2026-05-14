@@ -69,14 +69,32 @@ jobs:
           echo "Disk image: $DISK"
 
           # Boot headless, capture serial console (UEFI via OVMF)
-          # Firmware from qemu-system-data (already a dependency of qemu-system-x86)
-          OVMF=$(ls /usr/share/qemu/ovmf-x86_64*.bin 2>/dev/null | head -1)
+          # Find OVMF firmware on system (installed via ovmf package)
+          OVMF=""
+          for path in \
+            /usr/share/ovmf/OVMF.fd \
+            /usr/share/qemu/ovmf-x86_64-4m.bin \
+            /usr/share/qemu/ovmf-x86_64.bin \
+            /usr/share/OVMF/OVMF.fd \
+            /usr/share/edk2-ovmf/OVMF.fd; do
+            if [ -f "$path" ]; then
+              OVMF="$path"
+              break
+            fi
+          done
+          # Fallback: search for any OVMF .fd file
+          if [ -z "$OVMF" ]; then
+            OVMF=$(find /usr/share -name "OVMF.fd" -o -name "ovmf*.fd" -o -name "ovmf*.bin" 2>/dev/null | head -1)
+          fi
           if [ -z "$OVMF" ]; then
             echo "❌ OVMF firmware not found!"
-            echo "  Checked: /usr/share/qemu/ovmf-x86_64*.bin"
+            echo "  Searched: /usr/share/{ovmf,qemu,OVMF,edk2-ovmf}/"
+            dpkg -L ovmf 2>/dev/null || true
+            dpkg -L qemu-system-data 2>/dev/null || true
             exit 1
           fi
           echo "Using OVMF firmware: $OVMF"
+          ls -la "$OVMF"
           sudo qemu-system-x86_64 \
             -machine accel=kvm -cpu host -smp 2 -m 2G \
             -drive file="$DISK",format=raw,if=virtio \
