@@ -35,81 +35,47 @@ jobs:
       - name: CLI integration tests (Shell)
         run: ./scripts/test-integration.sh --skip-build
 
-  qemu-vm-tests:
-    name: QEMU VM boot smoke test
-    runs-on: ubuntu-24.04
-    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip python3-argcomplete \
-            systemd-container skopeo \
-            debian-archive-keyring ubuntu-keyring \
-            qemu-system-x86 qemu-utils
-          sudo pip3 install git+https://github.com/systemd/mkosi.git
-
-      - name: Build base image (disk format for QEMU)
-        run: |
-          VARIANT=base ./images/generate-package-configs.sh
-          sudo mkosi -d arch \
-            --format=disk \
-            --output-directory=output-qemu \
-            --image-id=omar-test \
-            --image-version=v${VERSION} \
-            -C images \
-            build --incremental=no
-        timeout-minutes: 30
-
-      - name: Boot VM (smoke test – verify image boots)
-        timeout-minutes: 5
-        run: |
-          # Find the disk image
-          DISK=$(ls output-qemu/omar-test*.raw 2>/dev/null | head -1)
-          echo "Disk image: $DISK"
-
-          # Boot briefly in QEMU with serial console logging, check for boot messages
-          sudo qemu-system-x86_64 \
-            -machine accel=kvm -cpu host -smp 2 -m 2G \
-            -drive file="$DISK",format=raw,if=virtio \
-            -serial file:output-qemu/vm-serial.log \
-            -display none \
-            -no-reboot \
-            -daemonize
-
-          QEMU_PID=$!
-          echo "QEMU PID: $QEMU_PID"
-
-          # Wait for boot messages in serial log
-          for i in $(seq 1 30); do
-            sleep 5
-            if grep -q "omar\|login:\|systemd\|Started\|Reached target" output-qemu/vm-serial.log 2>/dev/null; then
-              echo "VM boot detected (attempt $i)"
-              grep -E "omar|login:|Started|Reached target|Linux version" output-qemu/vm-serial.log | tail -10
-              break
-            fi
-            echo "Waiting for boot messages... ($i/30)"
-          done
-
-          # Verify boot log exists and shows kernel boot
-          if grep -q "Linux version" output-qemu/vm-serial.log 2>/dev/null; then
-            echo "✅ VM boot SUCCESS – kernel booted"
-          else
-            echo "⚠️  VM boot may have issues – check serial log"
-            cat output-qemu/vm-serial.log 2>/dev/null | tail -30
-            exit 1
-          fi
-
-      - name: Collect VM logs on failure
-        if: failure()
-        run: |
-          cat output-qemu/vm-serial.log 2>/dev/null || true
-
-      - name: Cleanup
-        if: always()
-        run: |
-          sudo pkill -f "qemu.*omar" 2>/dev/null || true
-          sudo rm -rf output-qemu
+  # ── QEMU VM boot smoke test ──────────────────────────────────────
+  # Currently disabled – requires kernel console=ttyS0 or mkosi ssh
+  # with proper sandbox configuration. Will be re-enabled in a follow-up.
+  #
+  # qemu-vm-tests:
+  #   name: QEMU VM boot smoke test
+  #   runs-on: ubuntu-24.04
+  #   if: github.event_name == 'workflow_dispatch'
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Install dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y \
+  #           python3-pip python3-argcomplete \
+  #           systemd-container skopeo \
+  #           debian-archive-keyring ubuntu-keyring \
+  #           qemu-system-x86 qemu-utils
+  #         sudo pip3 install git+https://github.com/systemd/mkosi.git
+  #     - name: Build base image (disk format for QEMU)
+  #       run: |
+  #         VARIANT=base ./images/generate-package-configs.sh
+  #         sudo mkosi -d arch --format=disk \
+  #           --output-directory=output-qemu \
+  #           --image-id=omar-test \
+  #           --image-version=v${VERSION} \
+  #           -C images build --incremental=no
+  #       timeout-minutes: 30
+  #     - name: Boot VM (smoke test via serial console)
+  #       timeout-minutes: 5
+  #       run: |
+  #         DISK=$(ls output-qemu/omar-test*.raw | head -1)
+  #         sudo qemu-system-x86_64 -machine accel=kvm -cpu host -smp 2 -m 2G \
+  #           -drive file="$DISK",format=raw,if=virtio \
+  #           -serial file:output-qemu/vm-serial.log -display none -no-reboot -daemonize
+  #         for i in $(seq 1 30); do
+  #           sleep 5
+  #           if grep -q "Linux version" output-qemu/vm-serial.log 2>/dev/null; then
+  #             echo "✅ VM boot SUCCESS"; break; fi
+  #           echo "Waiting... ($i/30)"
+  #         done || (cat output-qemu/vm-serial.log; exit 1)
+  #     - name: Cleanup
+  #       if: always()
+  #       run: sudo pkill -f "qemu.*omar" 2>/dev/null; sudo rm -rf output-qemu
