@@ -43,6 +43,14 @@ images/         # Build-Pipeline (mkosi)
 .github/workflows/  # CI/CD
 ```
 
+## Skill
+
+Für detaillierte Projekt-Kontexte den omar-Skill laden:
+```
+skill load omar
+```
+(Der Skill ist automatisch in `.opencode/skills/omar/` verfügbar.)
+
 ## Build
 
 ```bash
