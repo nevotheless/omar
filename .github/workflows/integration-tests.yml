@@ -49,7 +49,7 @@ jobs:
             python3-pip python3-argcomplete \
             systemd-container skopeo \
             debian-archive-keyring ubuntu-keyring \
-            qemu-system-x86 qemu-utils
+            qemu-system-x86 qemu-utils ovmf
           sudo pip3 install git+https://github.com/systemd/mkosi.git
 
       - name: Build base image (disk format for QEMU)
@@ -68,10 +68,11 @@ jobs:
           DISK=$(ls output-qemu/omar-test*.raw | head -1)
           echo "Disk image: $DISK"
 
-          # Boot headless, capture serial console
+          # Boot headless, capture serial console (UEFI via OVMF)
           sudo qemu-system-x86_64 \
             -machine accel=kvm -cpu host -smp 2 -m 2G \
             -drive file="$DISK",format=raw,if=virtio \
+            -bios /usr/share/OVMF/OVMF.fd \
             -serial file:output-qemu/vm-serial.log \
             -display none -no-reboot -daemonize
 
@@ -93,6 +94,14 @@ jobs:
             cat output-qemu/vm-serial.log 2>/dev/null || echo "(empty)"
             exit 1
           fi
+
+      - name: Show serial log (always)
+        if: always()
+        run: |
+          echo "=== VM Serial Log ==="
+          cat output-qemu/vm-serial.log 2>/dev/null || echo "(no serial log)"
+          echo "=== Disk usage ==="
+          du -sh output-qemu/ 2>/dev/null || true
 
       - name: Cleanup
         if: always()
