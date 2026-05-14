@@ -69,10 +69,18 @@ jobs:
           echo "Disk image: $DISK"
 
           # Boot headless, capture serial console (UEFI via OVMF)
+          # Firmware from qemu-system-data (already a dependency of qemu-system-x86)
+          OVMF=$(ls /usr/share/qemu/ovmf-x86_64*.bin 2>/dev/null | head -1)
+          if [ -z "$OVMF" ]; then
+            echo "❌ OVMF firmware not found!"
+            echo "  Checked: /usr/share/qemu/ovmf-x86_64*.bin"
+            exit 1
+          fi
+          echo "Using OVMF firmware: $OVMF"
           sudo qemu-system-x86_64 \
             -machine accel=kvm -cpu host -smp 2 -m 2G \
             -drive file="$DISK",format=raw,if=virtio \
-            -bios /usr/share/OVMF/OVMF.fd \
+            -bios "$OVMF" \
             -serial file:output-qemu/vm-serial.log \
             -display none -no-reboot -daemonize
 
