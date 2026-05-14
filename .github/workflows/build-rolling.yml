@@ -52,8 +52,8 @@ jobs:
           sudo mkosi -d arch --format=oci -C images \
             --image-id=omar-base \
             --output-directory=output-base \
-            --image-tag=v${VERSION} \
-            build
+            --image-version=v${VERSION} \
+            build --incremental=no
         timeout-minutes: 30
 
       - name: Push base image
@@ -90,8 +90,8 @@ jobs:
           sudo mkosi -d arch --format=oci -C images \
             --image-id=omar-hyprland \
             --output-directory=output-hyprland \
-            --image-tag=v${VERSION} \
-            build
+            --image-version=v${VERSION} \
+            build --incremental=no
         timeout-minutes: 30
 
       - name: Push hyprland image
@@ -131,7 +131,7 @@ jobs:
           sudo mkosi -d arch --format=oci -C images \
             --image-id=omar-full \
             --output-directory=output-full \
-            --image-tag=v${VERSION} \
+            --image-version=v${VERSION} \
             build --incremental=no
         timeout-minutes: 30
 
