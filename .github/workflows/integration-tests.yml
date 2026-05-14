@@ -37,7 +37,7 @@ jobs:
 
   # ── QEMU VM boot smoke test ──────────────────────────────────────
   # Currently disabled – requires kernel console=ttyS0 or mkosi ssh
-  # with proper sandbox configuration. Will be re-enabled in a follow-up.
+  # with proper sandbox configuration. See Issue #21 for re-enablement.
   #
   # qemu-vm-tests:
   #   name: QEMU VM boot smoke test
