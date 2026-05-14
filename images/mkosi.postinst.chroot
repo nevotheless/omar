@@ -21,8 +21,17 @@ add_chaotic_repo() {
     fi
 }
 
-# ── 1. Import and trust Chaotic-AUR GPG key ──────────────────────────
+# ── 0. Initialize pacman keyring ─────────────────────────────────────
+# mkosi with Debian tools tree doesn't always initialize the pacman keyring.
+# We need it for Chaotic-AUR GPG key import.
 echo "=== Setting up Chaotic-AUR ==="
+echo ">>> Initializing pacman keyring..."
+mkdir -p /etc/pacman.d/gnupg
+chmod 700 /etc/pacman.d/gnupg
+pacman-key --init
+pacman-key --populate archlinux
+
+# ── 1. Import and trust Chaotic-AUR GPG key ──────────────────────────
 echo ">>> Importing Chaotic-AUR GPG key..."
 pacman-key --recv-key 3056513887B78AEB --keyserver keyserver.ubuntu.com
 pacman-key --lsign-key 3056513887B78AEB
