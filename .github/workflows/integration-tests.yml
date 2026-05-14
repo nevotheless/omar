@@ -70,35 +70,31 @@ jobs:
 
           # Boot headless, capture serial console (UEFI via OVMF)
           # Find OVMF firmware on system (installed via ovmf package)
-          OVMF=""
-          for path in \
-            /usr/share/ovmf/OVMF.fd \
-            /usr/share/qemu/ovmf-x86_64-4m.bin \
-            /usr/share/qemu/ovmf-x86_64.bin \
-            /usr/share/OVMF/OVMF.fd \
-            /usr/share/edk2-ovmf/OVMF.fd; do
-            if [ -f "$path" ]; then
-              OVMF="$path"
-              break
-            fi
+          OVMF_CODE=""
+          OVMF_VARS=""
+          for path in /usr/share/ovmf/OVMF_CODE.fd /usr/share/OVMF/OVMF_CODE.fd; do
+            if [ -f "$path" ]; then OVMF_CODE="$path"; break; fi
           done
-          # Fallback: search for any OVMF .fd file
-          if [ -z "$OVMF" ]; then
-            OVMF=$(find /usr/share -name "OVMF.fd" -o -name "ovmf*.fd" -o -name "ovmf*.bin" 2>/dev/null | head -1)
+          for path in /usr/share/ovmf/OVMF_VARS.fd /usr/share/OVMF/OVMF_VARS.fd; do
+            if [ -f "$path" ]; then OVMF_VARS="$path"; break; fi
+          done
+          # Fallback: combined OVMF.fd (use pflash for both)
+          if [ -z "$OVMF_CODE" ]; then
+            OVMF_CODE=$(find /usr/share -name "OVMF_CODE.fd" 2>/dev/null | head -1)
+            OVMF_VARS=$(find /usr/share -name "OVMF_VARS.fd" 2>/dev/null | head -1)
           fi
-          if [ -z "$OVMF" ]; then
-            echo "❌ OVMF firmware not found!"
-            echo "  Searched: /usr/share/{ovmf,qemu,OVMF,edk2-ovmf}/"
+          if [ -z "$OVMF_CODE" ] || [ -z "$OVMF_VARS" ]; then
+            echo "❌ OVMF split firmware not found!"
             dpkg -L ovmf 2>/dev/null || true
-            dpkg -L qemu-system-data 2>/dev/null || true
             exit 1
           fi
-          echo "Using OVMF firmware: $OVMF"
-          ls -la "$OVMF"
+          echo "Using OVMF: code=$OVMF_CODE vars=$OVMF_VARS"
+          cp "$OVMF_VARS" output-qemu/OVMF_VARS.fd  # writable copy
           sudo qemu-system-x86_64 \
-            -machine accel=kvm -cpu host -smp 2 -m 2G \
+            -machine q35,accel=kvm -cpu host -smp 2 -m 2G \
             -drive file="$DISK",format=raw,if=virtio \
-            -bios "$OVMF" \
+            -drive if=pflash,format=raw,readonly=on,file="$OVMF_CODE" \
+            -drive if=pflash,format=raw,file=output-qemu/OVMF_VARS.fd \
             -serial file:output-qemu/vm-serial.log \
             -display none -no-reboot -daemonize
 
