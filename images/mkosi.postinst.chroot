@@ -83,13 +83,28 @@ fi
 echo ">>> Syncing with Chaotic-AUR repository..."
 pacman -Sy
 
-echo ">>> Installing bootc..."
-if ! pacman -S --noconfirm bootc; then
-    echo "WARNING: bootc not found, trying bootc-bin..."
-    pacman -S --noconfirm bootc-bin || echo "WARNING: bootc-bin also not found"
+# Install ALL packages from chaotic-aur.txt
+AUR_LIST="/etc/mkosi-packages/chaotic-aur.txt"
+if [ -f "$AUR_LIST" ]; then
+    echo ">>> Installing AUR-only packages from $AUR_LIST..."
+    while IFS= read -r line; do
+        pkg="${line%%#*}"
+        pkg="${pkg// /}"
+        [ -z "$pkg" ] && continue
+        echo "  -> Installing $pkg..."
+        if ! pacman -S --noconfirm "$pkg"; then
+            echo "  WARNING: $pkg not found in Chaotic-AUR"
+        fi
+    done < "$AUR_LIST"
+else
+    echo "WARNING: $AUR_LIST not found – installing known AUR packages"
+    echo ">>> Installing bootc..."
+    if ! pacman -S --noconfirm bootc; then
+        echo "WARNING: bootc not found, trying bootc-bin..."
+        pacman -S --noconfirm bootc-bin || echo "WARNING: bootc-bin also not found"
+    fi
+    echo ">>> Installing yay (AUR helper)..."
+    pacman -S --noconfirm yay || echo "WARNING: yay not found, can be installed at runtime"
 fi
-
-echo ">>> Installing yay (AUR helper)..."
-pacman -S --noconfirm yay || echo "WARNING: yay not found, can be installed at runtime"
 
 echo "=== Chaotic-AUR setup complete ==="

@@ -1,0 +1,32 @@
+# Chaotic-AUR / AUR-only packages
+# These are installed in mkosi.postinst.chroot (after Chaotic-AUR is configured)
+# NOT during the initial mkosi package installation
+#
+# bootc – core omar component (immutable OS updates/deploys)
+# yay   – AUR helper for end users
+# 1password* – password manager (non-free)
+# omarchy-nvim, omarchy-walker – custom omarchy packages
+# signal-desktop, spotify – non-free apps
+# etc.
+
+1password-beta
+1password-cli
+aether
+asdcontrol
+bootc
+claude-code
+cliamp
+hyprland-preview-share-picker
+omarchy-nvim
+omarchy-walker
+pinta
+python-terminaltexteffects
+signal-desktop
+spotify
+tobi-try
+ttf-ia-writer
+typora
+tzupdate
+ufw-docker
+xdg-terminal-exec
+yay

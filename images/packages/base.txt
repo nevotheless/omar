@@ -3,8 +3,6 @@ linux-firmware
 amd-ucode
 intel-ucode
 systemd
-systemd-boot
-systemd-ukify
 dbus-broker
 udev
 btrfs-progs

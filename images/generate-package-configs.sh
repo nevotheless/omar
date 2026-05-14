@@ -23,6 +23,20 @@ case "$VARIANT" in
         ;;
 esac
 
+# ── Load AUR-only skip list ───────────────────────────────────────────
+# Packages in chaotic-aur.txt are installed via mkosi.postinst.chroot
+# (after Chaotic-AUR is configured), NOT during mkosi's initial install.
+AUR_SKIP="$SCRIPT_DIR/packages/chaotic-aur.txt"
+declare -A SKIP_PKGS=()
+if [ -f "$AUR_SKIP" ]; then
+    while IFS= read -r line; do
+        pkg="${line%%#*}"
+        pkg="${pkg// /}"
+        [ -z "$pkg" ] && continue
+        SKIP_PKGS["$pkg"]=1
+    done < "$AUR_SKIP"
+fi
+
 # ── Collect package files ─────────────────────────────────────────────
 PACKAGE_FILES=(
     "$SCRIPT_DIR/packages/base.txt"
@@ -48,12 +62,18 @@ cat > "$CONF" <<-EOF
 EOF
 
 PKG_COUNT=0
+SKIP_COUNT=0
 for FILE in "${PACKAGE_FILES[@]}"; do
     while IFS= read -r line; do
         # Strip whitespace, skip comments and blanks
         pkg="${line%%#*}"
         pkg="${pkg// /}"
         [ -z "$pkg" ] && continue
+        # Skip AUR-only packages (installed via postinst)
+        if [ "${SKIP_PKGS[$pkg]}" = "1" ]; then
+            : $(( SKIP_COUNT += 1 ))
+            continue
+        fi
         echo "Packages=$pkg" >> "$CONF"
         : $(( PKG_COUNT += 1 ))
     done < "$FILE"
@@ -61,4 +81,4 @@ done
 
 echo "→ Generated $CONF"
 echo "  Variant:  $VARIANT"
-echo "  Packages: $PKG_COUNT"
+echo "  Packages: $PKG_COUNT (skipped $SKIP_COUNT AUR-only)"
