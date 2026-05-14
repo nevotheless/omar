@@ -2,7 +2,7 @@ VERSION ?= 2026.5.0-dev
 VARIANT ?= full
 
 .PHONY: build test test-race test-cover test-short test-ci lint lint-all clean \
-        image image-shell image-vm coverage
+        image image-shell image-vm coverage test-integration test-integration-go
 
 build:
 	go build -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=$(VERSION)'" -o bin/omar ./cmd/omar
@@ -25,6 +25,12 @@ coverage: test-cover
 	@echo "→ coverage.html generated — open in browser"
 
 test-ci: test-race test-cover
+
+test-integration:
+	./scripts/test-integration.sh
+
+test-integration-go:
+	./scripts/test-integration.sh --go
 
 lint:
 	go vet ./...

@@ -1,0 +1,112 @@
+name: integration-tests
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+  pull_request:
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'tests/**'
+      - 'go.*'
+      - 'scripts/test-integration.sh'
+      - 'Makefile'
+
+env:
+  VERSION: 2026.5.0
+
+jobs:
+  cli-smoke-tests:
+    name: CLI smoke tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build CLI
+        run: go build -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=${VERSION}'" -o bin/omar ./cmd/omar
+
+      - name: CLI integration tests (Go)
+        run: go test -tags=integration -count=1 -v ./tests/integration/
+
+      - name: CLI integration tests (Shell)
+        run: ./scripts/test-integration.sh --skip-build
+
+  qemu-vm-tests:
+    name: QEMU VM boot + test
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip python3-argcomplete \
+            systemd-container skopeo \
+            debian-archive-keyring ubuntu-keyring \
+            qemu-system-x86 qemu-utils
+          sudo pip3 install git+https://github.com/systemd/mkosi.git
+
+      - name: Build base image (disk format for QEMU)
+        run: |
+          VARIANT=base ./images/generate-package-configs.sh
+          sudo mkosi -d arch \
+            --format=disk \
+            --output-directory=output-qemu \
+            --image-id=omar-test \
+            --image-version=v${VERSION} \
+            -C images \
+            build --incremental=no
+        timeout-minutes: 30
+
+      - name: Boot VM and wait for SSH
+        run: |
+          # Boot the image in QEMU
+          sudo mkosi \
+            --output-directory=output-qemu \
+            --image-id=omar-test \
+            -C images \
+            vm &
+          VM_PID=$!
+          echo "VM PID: $VM_PID"
+          # Wait for SSH to become available
+          for i in $(seq 1 30); do
+            if mkosi ssh true 2>/dev/null; then
+              echo "VM is ready"
+              break
+            fi
+            echo "Waiting for VM... ($i/30)"
+            sleep 10
+          done
+
+      - name: Build omar CLI for target
+        run: |
+          go build -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=${VERSION}'" \
+            -o bin/omar-linux-amd64 ./cmd/omar
+
+      - name: Run integration tests in VM
+        run: |
+          # Copy omar binary to VM
+          mkosi ssh mkdir -p /tmp/omar-test
+          mkosi push bin/omar-linux-amd64 /tmp/omar-test/omar
+          # Run tests
+          mkosi ssh /tmp/omar-test/omar version
+          mkosi ssh /tmp/omar-test/omar status
+          mkosi ssh /tmp/omar-test/omar --help
+
+      - name: Collect VM logs on failure
+        if: failure()
+        run: |
+          mkosi ssh journalctl --no-pager -n 100 2>/dev/null || true
+          cat output-qemu/vm.log 2>/dev/null || true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          mkosi kill 2>/dev/null || true
+          sudo rm -rf output-qemu
