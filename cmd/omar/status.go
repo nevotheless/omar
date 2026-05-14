@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/nevotheless/omar/internal/image"
+	"github.com/spf13/cobra"
 )
 
 func newStatusCmd() *cobra.Command {

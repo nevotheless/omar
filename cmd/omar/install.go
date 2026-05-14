@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
 	"github.com/nevotheless/omar/internal/bootc"
 	"github.com/nevotheless/omar/internal/convert"
+	"github.com/spf13/cobra"
 )
 
 func newInstallCmd() *cobra.Command {
@@ -28,9 +28,9 @@ With --fresh: installs omar to an empty disk using 'bootc install'.`,
 				if disk == "" {
 					return fmt.Errorf("--fresh requires a target disk (e.g. /dev/sda)")
 				}
-			return freshInstall(disk, image, autoYes)
-		}
-		return convert.Migrate(image, autoYes)
+				return freshInstall(disk, image, autoYes)
+			}
+			return convert.Migrate(image, autoYes)
 		},
 	}
 
