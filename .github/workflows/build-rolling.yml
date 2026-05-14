@@ -9,7 +9,7 @@ env:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -19,12 +19,10 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3 python3-pip python3-argcomplete
-          sudo pip install mkosi
-
-      - name: Check bootc version
-        run: |
-          echo "BUILD_DATE=$(date +%Y%m%d)" >> $GITHUB_ENV
+          sudo apt-get install -y \
+            python3-pip python3-argcomplete \
+            systemd-container skopeo
+          sudo pip3 install mkosi
 
       - name: Build OCI image
         run: |
@@ -32,6 +30,7 @@ jobs:
             -C images \
             --image-tag=v${VERSION} \
             build
+        timeout-minutes: 30
 
       - name: Push to registry
         env:
