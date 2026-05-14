@@ -66,7 +66,7 @@ jobs:
 
       - name: Boot VM and wait for SSH
         run: |
-          # Boot the image in QEMU
+          # Boot the image in QEMU via mkosi
           sudo mkosi \
             --output-directory=output-qemu \
             --image-id=omar-test \
@@ -74,10 +74,12 @@ jobs:
             vm &
           VM_PID=$!
           echo "VM PID: $VM_PID"
+
           # Wait for SSH to become available
+          # mkosi stores VM state in root's XDG_RUNTIME_DIR when run with sudo
           for i in $(seq 1 30); do
-            if mkosi ssh true 2>/dev/null; then
-              echo "VM is ready"
+            if sudo XDG_RUNTIME_DIR=/run/user/0 mkosi ssh true 2>/dev/null; then
+              echo "VM is ready (attempt $i)"
               break
             fi
             echo "Waiting for VM... ($i/30)"
@@ -91,23 +93,23 @@ jobs:
 
       - name: Run integration tests in VM
         run: |
-          # mkosi vm started with sudo, so ssh/push need sudo too for sandbox access
+          MKOSI="sudo XDG_RUNTIME_DIR=/run/user/0 mkosi"
           # Copy omar binary to VM
-          sudo mkosi ssh mkdir -p /tmp/omar-test
-          sudo mkosi push bin/omar-linux-amd64 /tmp/omar-test/omar
+          $MKOSI ssh mkdir -p /tmp/omar-test
+          $MKOSI push bin/omar-linux-amd64 /tmp/omar-test/omar
           # Run tests
-          sudo mkosi ssh /tmp/omar-test/omar version
-          sudo mkosi ssh /tmp/omar-test/omar status
-          sudo mkosi ssh /tmp/omar-test/omar --help
+          $MKOSI ssh /tmp/omar-test/omar version
+          $MKOSI ssh /tmp/omar-test/omar status
+          $MKOSI ssh /tmp/omar-test/omar --help
 
       - name: Collect VM logs on failure
         if: failure()
         run: |
-          sudo mkosi ssh journalctl --no-pager -n 100 2>/dev/null || true
+          sudo XDG_RUNTIME_DIR=/run/user/0 mkosi ssh journalctl --no-pager -n 100 2>/dev/null || true
           cat output-qemu/vm.log 2>/dev/null || true
 
       - name: Cleanup
         if: always()
         run: |
-          sudo mkosi kill 2>/dev/null || true
+          sudo XDG_RUNTIME_DIR=/run/user/0 mkosi kill 2>/dev/null || true
           sudo rm -rf output-qemu
