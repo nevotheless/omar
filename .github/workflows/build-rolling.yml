@@ -21,7 +21,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             python3-pip python3-argcomplete \
-            systemd-container skopeo distribution-gpg-keys
+            systemd-container skopeo debian-archive-keyring ubuntu-keyring
           sudo pip3 install git+https://github.com/systemd/mkosi.git
 
       - name: Build OCI image
