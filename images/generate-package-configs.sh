@@ -3,7 +3,7 @@
 # generate-package-configs.sh – generates mkosi package configs from .txt files.
 #
 # Usage:
-#   VARIANT=omarchy ./generate-package-configs.sh
+#   VARIANT=full ./generate-package-configs.sh
 #   VARIANT=hyprland ./generate-package-configs.sh
 #   VARIANT=base ./generate-package-configs.sh
 #
@@ -11,14 +11,14 @@
 #
 set -e
 
-VARIANT="${VARIANT:-omarchy}"
+VARIANT="${VARIANT:-full}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 # ── Validate variant ──────────────────────────────────────────────────
 case "$VARIANT" in
-    base|hyprland|omarchy) ;;
+    base|hyprland|full) ;;
     *)
-        echo "ERROR: Unknown variant '$VARIANT'. Use: base, hyprland, omarchy"
+        echo "ERROR: Unknown variant '$VARIANT'. Use: base, hyprland, full"
         exit 1
         ;;
 esac
@@ -46,7 +46,7 @@ PACKAGE_FILES=(
 case "$VARIANT" in
     base)     ;; # no extra packages
     hyprland) PACKAGE_FILES+=("$SCRIPT_DIR/packages/hyprland.txt") ;;
-    omarchy)  PACKAGE_FILES+=("$SCRIPT_DIR/packages/omarchy.txt") ;;
+    full)  PACKAGE_FILES+=("$SCRIPT_DIR/packages/full.txt") ;;
 esac
 
 # ── Generate packages.conf ────────────────────────────────────────────

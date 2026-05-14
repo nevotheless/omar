@@ -42,7 +42,7 @@ Body:
 cmd/omar/       # CLI Entrypoint (Go + Cobra)
 internal/       # Pakete (bootc, convert, pkg, image, update, version)
 images/         # Build-Pipeline (mkosi)
-  packages/     # Paketlisten (base, hyprland, omarchy, immutable)
+  packages/     # Paketlisten (base, hyprland, full, immutable)
   scripts/      # Postinstall- und Konfigurations-Skripte
 .devcontainer/  # Entwicklungsumgebung
 .github/workflows/  # CI/CD
