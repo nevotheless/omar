@@ -1,0 +1,31 @@
+{
+    "name": "omar dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.go",
+                "ms-azuretools.vscode-docker",
+                "timonwong.shellcheck"
+            ],
+            "settings": {
+                "go.useLanguageServer": true,
+                "go.gopath": "/home/vscode/go"
+            }
+        }
+    },
+    "forwardPorts": [],
+    "postCreateCommand": "git config --global --add safe.directory /workspaces/omar",
+    "remoteUser": "vscode",
+    "features": {
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
+    "mounts": [
+        "source=/var/run/docker.sock,target=/var/run/docker.sock,type=bind"
+    ],
+    "containerEnv": {
+        "OMAR_VERSION": "2026.5.0-dev"
+    }
+}
