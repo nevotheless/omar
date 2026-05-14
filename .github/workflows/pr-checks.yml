@@ -26,16 +26,17 @@ jobs:
         run: go test ./... -v
 
   image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install mkosi
+      - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-pip
-          sudo pip install mkosi
+          sudo apt-get install -y python3-pip python3-argcomplete systemd-container debian-archive-keyring ubuntu-keyring
+          sudo pip3 install git+https://github.com/systemd/mkosi.git
 
       - name: Build image
         run: |
           sudo mkosi -d arch --format=oci -C images build
+        timeout-minutes: 30
