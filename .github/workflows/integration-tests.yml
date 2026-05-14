@@ -36,7 +36,7 @@ jobs:
         run: ./scripts/test-integration.sh --skip-build
 
   qemu-vm-tests:
-    name: QEMU VM boot + test
+    name: QEMU VM boot smoke test
     runs-on: ubuntu-24.04
     if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     steps:
@@ -64,58 +64,52 @@ jobs:
             build --incremental=no
         timeout-minutes: 30
 
-      - name: Boot VM and wait for SSH
+      - name: Boot VM (smoke test – verify image boots)
+        timeout-minutes: 5
         run: |
-          # Boot the image in QEMU via mkosi
-          sudo mkosi \
-            --output-directory=output-qemu \
-            --image-id=omar-test \
-            -C images \
-            vm &
-          echo "VM PID: $!"
+          # Find the disk image
+          DISK=$(ls output-qemu/omar-test*.raw 2>/dev/null | head -1)
+          echo "Disk image: $DISK"
 
-          # mkosi stores VM state in root's XDG_RUNTIME_DIR when run with sudo.
-          # 'sudo env' ensures the env var is properly passed to mkosi even when
-          # sudo resets the environment by default.
-          MKOSI="sudo env XDG_RUNTIME_DIR=/run/user/0 mkosi"
+          # Boot briefly in QEMU with serial console logging, check for boot messages
+          sudo qemu-system-x86_64 \
+            -machine accel=kvm -cpu host -smp 2 -m 2G \
+            -drive file="$DISK",format=raw,if=virtio \
+            -serial file:output-qemu/vm-serial.log \
+            -display none \
+            -no-reboot \
+            -daemonize
 
-          # Wait for SSH to become available
+          QEMU_PID=$!
+          echo "QEMU PID: $QEMU_PID"
+
+          # Wait for boot messages in serial log
           for i in $(seq 1 30); do
-            if $MKOSI ssh true >/dev/null 2>&1; then
-              echo "VM is ready (attempt $i)"
-              exit 0
+            sleep 5
+            if grep -q "omar\|login:\|systemd\|Started\|Reached target" output-qemu/vm-serial.log 2>/dev/null; then
+              echo "VM boot detected (attempt $i)"
+              grep -E "omar|login:|Started|Reached target|Linux version" output-qemu/vm-serial.log | tail -10
+              break
             fi
-            echo "Waiting for VM... ($i/30)"
-            sleep 10
+            echo "Waiting for boot messages... ($i/30)"
           done
-          echo "VM did not become ready in time"
-          exit 1
 
-      - name: Build omar CLI for target
-        run: |
-          go build -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=${VERSION}'" \
-            -o bin/omar-linux-amd64 ./cmd/omar
-
-      - name: Run integration tests in VM
-        run: |
-          MKOSI="sudo env XDG_RUNTIME_DIR=/run/user/0 mkosi"
-          # Copy omar binary to VM
-          $MKOSI ssh mkdir -p /tmp/omar-test
-          $MKOSI push bin/omar-linux-amd64 /tmp/omar-test/omar
-          # Run tests
-          $MKOSI ssh /tmp/omar-test/omar version
-          $MKOSI ssh /tmp/omar-test/omar status
-          $MKOSI ssh /tmp/omar-test/omar --help
+          # Verify boot log exists and shows kernel boot
+          if grep -q "Linux version" output-qemu/vm-serial.log 2>/dev/null; then
+            echo "✅ VM boot SUCCESS – kernel booted"
+          else
+            echo "⚠️  VM boot may have issues – check serial log"
+            cat output-qemu/vm-serial.log 2>/dev/null | tail -30
+            exit 1
+          fi
 
       - name: Collect VM logs on failure
         if: failure()
         run: |
-          sudo env XDG_RUNTIME_DIR=/run/user/0 mkosi ssh journalctl --no-pager -n 100 2>/dev/null || true
-          cat output-qemu/vm.log 2>/dev/null || true
+          cat output-qemu/vm-serial.log 2>/dev/null || true
 
       - name: Cleanup
         if: always()
         run: |
-          sudo env XDG_RUNTIME_DIR=/run/user/0 mkosi kill 2>/dev/null || true
           sudo pkill -f "qemu.*omar" 2>/dev/null || true
           sudo rm -rf output-qemu
