@@ -17,6 +17,7 @@ bootc
 claude-code
 cliamp
 hyprland-preview-share-picker
+localsend
 omarchy-nvim
 omarchy-walker
 pinta
@@ -27,6 +28,7 @@ tobi-try
 ttf-ia-writer
 typora
 tzupdate
+yaru-icon-theme
 ufw-docker
 xdg-terminal-exec
 yay
