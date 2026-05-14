@@ -209,13 +209,23 @@ func TestPkgList_NoBackends(t *testing.T) {
 // ─── install ──────────────────────────────────────────────────────────────
 
 func TestInstallNoArgs(t *testing.T) {
-	// omar install without flags should produce some output (help or error)
+	// omar install without flags runs pre-flight checks.
+	// On a system with ESP/systemd-boot, it proceeds to try bootc conversion.
+	// On a bare CI runner, pre-flight fails early.
 	stdout, stderr, err := execOmar("install")
 	t.Logf("install stdout: %q", stdout)
 	t.Logf("install stderr: %q", stderr)
-	// Either shows help or tries to convert (will fail gracefully on non-ostree)
+
+	// In all cases, output should contain meaningful pre-flight information
+	assert.Contains(t, stdout, "Pre-flight")
+
 	if err != nil {
-		assert.Contains(t, stderr, "bootc") // likely bootc-related error
+		// Error should mention either pre-flight failure or bootc
+		assert.Condition(t, func() bool {
+			return strings.Contains(stderr, "pre-flight") ||
+				strings.Contains(stderr, "bootc") ||
+				strings.Contains(stderr, "conversion")
+		}, "stderr should reference pre-flight, bootc, or conversion failure")
 	}
 }
 

@@ -173,9 +173,9 @@ test_install() {
     if output=$("${OMAR_BIN}" install 2>&1); then
         PASS=$((PASS + 1))
         print_result "install: succeeds on immutable" "PASS"
-    elif echo "$output" | grep -q "bootc\|Usage\|Pre-flight"; then
+    elif echo "$output" | grep -q "bootc\|Pre-flight\|conversion"; then
         PASS=$((PASS + 1))
-        print_result "install: shows meaningful output on mutable" "PASS"
+        print_result "install: shows meaningful output" "PASS"
     else
         FAIL=$((FAIL + 1))
         print_result "install: unexpected failure" "FAIL" "${output:0:200}"
