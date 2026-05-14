@@ -91,22 +91,23 @@ jobs:
 
       - name: Run integration tests in VM
         run: |
+          # mkosi vm started with sudo, so ssh/push need sudo too for sandbox access
           # Copy omar binary to VM
-          mkosi ssh mkdir -p /tmp/omar-test
-          mkosi push bin/omar-linux-amd64 /tmp/omar-test/omar
+          sudo mkosi ssh mkdir -p /tmp/omar-test
+          sudo mkosi push bin/omar-linux-amd64 /tmp/omar-test/omar
           # Run tests
-          mkosi ssh /tmp/omar-test/omar version
-          mkosi ssh /tmp/omar-test/omar status
-          mkosi ssh /tmp/omar-test/omar --help
+          sudo mkosi ssh /tmp/omar-test/omar version
+          sudo mkosi ssh /tmp/omar-test/omar status
+          sudo mkosi ssh /tmp/omar-test/omar --help
 
       - name: Collect VM logs on failure
         if: failure()
         run: |
-          mkosi ssh journalctl --no-pager -n 100 2>/dev/null || true
+          sudo mkosi ssh journalctl --no-pager -n 100 2>/dev/null || true
           cat output-qemu/vm.log 2>/dev/null || true
 
       - name: Cleanup
         if: always()
         run: |
-          mkosi kill 2>/dev/null || true
+          sudo mkosi kill 2>/dev/null || true
           sudo rm -rf output-qemu
