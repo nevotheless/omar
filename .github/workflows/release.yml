@@ -32,7 +32,7 @@ jobs:
     needs: [test]
     strategy:
       matrix:
-        variant: [base, hyprland, omarchy]
+        variant: [base, hyprland, full]
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -48,6 +48,9 @@ jobs:
             systemd-container skopeo debian-archive-keyring ubuntu-keyring
           sudo pip3 install git+https://github.com/systemd/mkosi.git
 
+      - name: Clean mkosi cache (disk space)
+        run: sudo rm -rf images/mkosi.cache images/mkosi.builddir images/output*
+
       - name: Build ${{ matrix.variant }} image
         run: |
           VARIANT=${{ matrix.variant }} ./images/generate-package-configs.sh
@@ -55,7 +58,7 @@ jobs:
             --image-id=omar-${{ matrix.variant }} \
             --output-directory=output-${{ matrix.variant }} \
             --image-tag=${VERSION} \
-            build
+            build --incremental=no
         timeout-minutes: 30
 
       - name: Push ${{ matrix.variant }} image

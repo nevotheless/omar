@@ -105,7 +105,7 @@ jobs:
             oci:images/output-hyprland/omar-hyprland:v${VERSION} \
             docker://${REGISTRY}:hyprland-rolling
 
-  omarchy:
+  full:
     needs: [test]
     runs-on: ubuntu-24.04
     permissions:
@@ -122,30 +122,33 @@ jobs:
             systemd-container skopeo debian-archive-keyring ubuntu-keyring
           sudo pip3 install git+https://github.com/systemd/mkosi.git
 
-      - name: Build omarchy variant
+      - name: Clean mkosi cache (disk space)
+        run: sudo rm -rf images/mkosi.cache images/mkosi.builddir images/output*
+
+      - name: Build full variant
         run: |
-          VARIANT=omarchy ./images/generate-package-configs.sh
+          VARIANT=full ./images/generate-package-configs.sh
           sudo mkosi -d arch --format=oci -C images \
-            --image-id=omar-omarchy \
-            --output-directory=output-omarchy \
+            --image-id=omar-full \
+            --output-directory=output-full \
             --image-tag=v${VERSION} \
-            build
+            build --incremental=no
         timeout-minutes: 30
 
-      - name: Push omarchy image
+      - name: Push full image
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
           skopeo copy \
-            oci:images/output-omarchy/omar-omarchy:v${VERSION} \
-            docker://${REGISTRY}:omarchy-rolling-$(date +%Y%m%d)
+            oci:images/output-full/omar-full:v${VERSION} \
+            docker://${REGISTRY}:full-rolling-$(date +%Y%m%d)
           skopeo copy \
-            oci:images/output-omarchy/omar-omarchy:v${VERSION} \
-            docker://${REGISTRY}:omarchy-rolling
+            oci:images/output-full/omar-full:v${VERSION} \
+            docker://${REGISTRY}:full-rolling
 
   cli:
     runs-on: ubuntu-24.04
-    needs: [base, hyprland, omarchy]
+    needs: [base, hyprland, full]
     if: always()
     steps:
       - uses: actions/checkout@v4

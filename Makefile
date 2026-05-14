@@ -1,5 +1,5 @@
 VERSION ?= 2026.5.0-dev
-VARIANT ?= omarchy
+VARIANT ?= full
 
 .PHONY: build test test-race test-cover test-short test-ci lint lint-all clean \
         image image-shell image-vm coverage

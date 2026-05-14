@@ -51,7 +51,7 @@ jobs:
         run: |
           VARIANT=base   ./images/generate-package-configs.sh
           VARIANT=hyprland ./images/generate-package-configs.sh
-          VARIANT=omarchy ./images/generate-package-configs.sh
+          VARIANT=full ./images/generate-package-configs.sh
 
       - name: Clean mkosi build artifacts (disk space)
         run: |
