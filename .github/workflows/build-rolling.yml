@@ -6,9 +6,11 @@ on:
 
 env:
   VERSION: 2026.5.0
+  REGISTRY: ghcr.io/nevotheless/omar
+  DATE_TAG: rolling-$(date +%Y%m%d)
 
 jobs:
-  build:
+  base:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -24,34 +26,113 @@ jobs:
             systemd-container skopeo debian-archive-keyring ubuntu-keyring
           sudo pip3 install git+https://github.com/systemd/mkosi.git
 
-      - name: Build OCI image
+      - name: Build base variant
         run: |
-          sudo mkosi -d arch --format=oci \
-            -C images \
+          VARIANT=base ./images/generate-package-configs.sh
+          sudo mkosi -d arch --format=oci -C images \
+            --image-id=omar-base \
+            --output-directory=output-base \
             --image-tag=v${VERSION} \
             build
         timeout-minutes: 30
 
-      - name: Push to registry
+      - name: Push base image
         env:
           REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          IMAGE="ghcr.io/nevotheless/omar"
           skopeo copy \
-            oci:images/output/omar:v${VERSION} \
-            docker://${IMAGE}:rolling-$(date +%Y%m%d)
+            oci:images/output-base/omar-base:v${VERSION} \
+            docker://${REGISTRY}:base-rolling-$(date +%Y%m%d)
           skopeo copy \
-            oci:images/output/omar:v${VERSION} \
-            docker://${IMAGE}:rolling
+            oci:images/output-base/omar-base:v${VERSION} \
+            docker://${REGISTRY}:base-rolling
 
-      - name: Build CLI binaries
-        uses: actions/setup-go@v5
+  hyprland:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip python3-argcomplete \
+            systemd-container skopeo debian-archive-keyring ubuntu-keyring
+          sudo pip3 install git+https://github.com/systemd/mkosi.git
+
+      - name: Build hyprland variant
+        run: |
+          VARIANT=hyprland ./images/generate-package-configs.sh
+          sudo mkosi -d arch --format=oci -C images \
+            --image-id=omar-hyprland \
+            --output-directory=output-hyprland \
+            --image-tag=v${VERSION} \
+            build
+        timeout-minutes: 30
+
+      - name: Push hyprland image
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          skopeo copy \
+            oci:images/output-hyprland/omar-hyprland:v${VERSION} \
+            docker://${REGISTRY}:hyprland-rolling-$(date +%Y%m%d)
+          skopeo copy \
+            oci:images/output-hyprland/omar-hyprland:v${VERSION} \
+            docker://${REGISTRY}:hyprland-rolling
+
+  omarchy:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip python3-argcomplete \
+            systemd-container skopeo debian-archive-keyring ubuntu-keyring
+          sudo pip3 install git+https://github.com/systemd/mkosi.git
+
+      - name: Build omarchy variant
+        run: |
+          VARIANT=omarchy ./images/generate-package-configs.sh
+          sudo mkosi -d arch --format=oci -C images \
+            --image-id=omar-omarchy \
+            --output-directory=output-omarchy \
+            --image-tag=v${VERSION} \
+            build
+        timeout-minutes: 30
+
+      - name: Push omarchy image
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          skopeo copy \
+            oci:images/output-omarchy/omar-omarchy:v${VERSION} \
+            docker://${REGISTRY}:omarchy-rolling-$(date +%Y%m%d)
+          skopeo copy \
+            oci:images/output-omarchy/omar-omarchy:v${VERSION} \
+            docker://${REGISTRY}:omarchy-rolling
+
+  cli:
+    runs-on: ubuntu-24.04
+    needs: [base, hyprland, omarchy]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.24'
       - run: |
           go build -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=v${VERSION}'" \
             -o omar-linux-amd64 ./cmd/omar
-
       - uses: actions/upload-artifact@v4
         with:
           name: omar-linux-amd64

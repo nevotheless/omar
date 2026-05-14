@@ -19,3 +19,6 @@ pacman-contrib
 base-devel
 git
 vim
+# Dependencies for postinst (Chaotic-AUR key import, URL downloads)
+gnupg
+curl
