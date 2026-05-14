@@ -34,7 +34,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip python3-argcomplete systemd-container
-          sudo pip3 install mkosi
+          sudo pip3 install git+https://github.com/systemd/mkosi.git
 
       - name: Build image
         run: |
