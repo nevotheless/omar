@@ -72,19 +72,24 @@ jobs:
             --image-id=omar-test \
             -C images \
             vm &
-          VM_PID=$!
-          echo "VM PID: $VM_PID"
+          echo "VM PID: $!"
+
+          # mkosi stores VM state in root's XDG_RUNTIME_DIR when run with sudo.
+          # 'sudo env' ensures the env var is properly passed to mkosi even when
+          # sudo resets the environment by default.
+          MKOSI="sudo env XDG_RUNTIME_DIR=/run/user/0 mkosi"
 
           # Wait for SSH to become available
-          # mkosi stores VM state in root's XDG_RUNTIME_DIR when run with sudo
           for i in $(seq 1 30); do
-            if sudo XDG_RUNTIME_DIR=/run/user/0 mkosi ssh true 2>/dev/null; then
+            if $MKOSI ssh true >/dev/null 2>&1; then
               echo "VM is ready (attempt $i)"
-              break
+              exit 0
             fi
             echo "Waiting for VM... ($i/30)"
             sleep 10
           done
+          echo "VM did not become ready in time"
+          exit 1
 
       - name: Build omar CLI for target
         run: |
@@ -93,7 +98,7 @@ jobs:
 
       - name: Run integration tests in VM
         run: |
-          MKOSI="sudo XDG_RUNTIME_DIR=/run/user/0 mkosi"
+          MKOSI="sudo env XDG_RUNTIME_DIR=/run/user/0 mkosi"
           # Copy omar binary to VM
           $MKOSI ssh mkdir -p /tmp/omar-test
           $MKOSI push bin/omar-linux-amd64 /tmp/omar-test/omar
@@ -105,11 +110,12 @@ jobs:
       - name: Collect VM logs on failure
         if: failure()
         run: |
-          sudo XDG_RUNTIME_DIR=/run/user/0 mkosi ssh journalctl --no-pager -n 100 2>/dev/null || true
+          sudo env XDG_RUNTIME_DIR=/run/user/0 mkosi ssh journalctl --no-pager -n 100 2>/dev/null || true
           cat output-qemu/vm.log 2>/dev/null || true
 
       - name: Cleanup
         if: always()
         run: |
-          sudo XDG_RUNTIME_DIR=/run/user/0 mkosi kill 2>/dev/null || true
+          sudo env XDG_RUNTIME_DIR=/run/user/0 mkosi kill 2>/dev/null || true
+          sudo pkill -f "qemu.*omar" 2>/dev/null || true
           sudo rm -rf output-qemu
