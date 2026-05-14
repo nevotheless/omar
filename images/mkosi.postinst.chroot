@@ -28,6 +28,23 @@ done
 mkdir -p /run/alpm
 chown alpm:alpm /run/alpm
 
+# ── 0a. Rebuild CA certificates ──────────────────────────────────────
+# The ca-certificates post-transaction hook segfaults in the mkosi
+# sandbox, so /etc/ssl/certs/ca-certificates.crt is not generated.
+# We need it for HTTPS downloads via pacman.
+echo ">>> Rebuilding CA certificate bundle..."
+if [ -f /etc/ssl/certs/ca-certificates.crt ]; then
+    echo "   CA bundle already exists"
+elif command -v update-ca-trust &>/dev/null; then
+    update-ca-trust extract
+elif [ -d /usr/share/ca-certificates/mozilla ]; then
+    cat /usr/share/ca-certificates/mozilla/*.crt > /etc/ssl/certs/ca-certificates.crt
+fi
+if [ ! -f /etc/ssl/certs/ca-certificates.crt ]; then
+    echo "WARNING: CA certificate bundle still missing"
+    find /usr -name "ca-certificates.crt" -o -name "*.crt" 2>/dev/null | head -3
+fi
+
 # ── 1. Initialize pacman keyring ─────────────────────────────────────
 echo ">>> Initializing pacman keyring..."
 mkdir -p /etc/pacman.d/gnupg
