@@ -49,8 +49,8 @@ jobs:
           sudo apt-get clean
           df -h /
 
-      - name: Build image (omarchy variant)
+      - name: Build image (base variant)
         run: |
-          VARIANT=omarchy ./images/generate-package-configs.sh
+          VARIANT=base ./images/generate-package-configs.sh
           sudo mkosi -d arch --format=oci -C images build --incremental=no
         timeout-minutes: 30
