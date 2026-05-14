@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
+	"github.com/nevotheless/omar/internal/bootc"
 	"github.com/nevotheless/omar/internal/convert"
 )
 
@@ -27,9 +28,9 @@ With --fresh: installs omar to an empty disk using 'bootc install'.`,
 				if disk == "" {
 					return fmt.Errorf("--fresh requires a target disk (e.g. /dev/sda)")
 				}
-				return freshInstall(disk, image)
-			}
-			return convert.Migrate(image, autoYes)
+			return freshInstall(disk, image, autoYes)
+		}
+		return convert.Migrate(image, autoYes)
 		},
 	}
 
@@ -40,19 +41,28 @@ With --fresh: installs omar to an empty disk using 'bootc install'.`,
 	return cmd
 }
 
-func freshInstall(disk, image string) error {
+func freshInstall(disk, image string, autoYes bool) error {
+	if disk == "" {
+		return fmt.Errorf("--fresh requires a target disk (e.g. /dev/sda)")
+	}
+	if !checkBootc() {
+		return fmt.Errorf("bootc is not installed. Run 'omar install' without --fresh first.")
+	}
+
 	fmt.Printf("This will DESTROY all data on %s\n", disk)
 	fmt.Printf("Installing from image: %s\n", image)
 	fmt.Println()
 
-	if err := confirmDestructive(disk); err != nil {
-		return err
+	if !autoYes {
+		if err := confirmDestructive(disk); err != nil {
+			return err
+		}
 	}
 
-	fmt.Println("Installing...")
-	// bootc install handles partitioning and deployment
-	return nil
+	return bootc.Install(disk, image)
 }
+
+var checkBootc = bootc.HasBootc
 
 var confirmDestructive = defaultConfirm
 

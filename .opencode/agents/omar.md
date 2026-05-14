@@ -10,6 +10,12 @@ permission:
   skill:
     omar: allow
     omarchy: allow
+  sequential-thinking: allow
+  pty_spawn: allow
+  pty_kill: allow
+  pty_list: allow
+  pty_read: allow
+  pty_write: allow
   todowrite: allow
   webfetch: allow
   websearch: allow
@@ -31,8 +37,10 @@ skill({ name: "omar" })
 
 1. Check GitHub Issues: `gh issue list --repo nevotheless/omar`
 2. Create todos: use the `todowrite` tool
-3. Implement, test, commit
-4. Close issues with `Closes #N` in commit messages
+3. Use `sequential-thinking` for complex multi-step planning
+4. Use `pty_spawn`/`pty_write`/`pty_read` for long-running tasks in parallel
+5. Implement, test, commit
+6. Close issues with `Closes #N` in commit messages
 
 ## Critical paths
 
