@@ -57,7 +57,7 @@ jobs:
           sudo mkosi -d arch --format=oci -C images \
             --image-id=omar-${{ matrix.variant }} \
             --output-directory=output-${{ matrix.variant }} \
-            --image-tag=${VERSION} \
+            --image-version=${VERSION} \
             build --incremental=no
         timeout-minutes: 30
 
