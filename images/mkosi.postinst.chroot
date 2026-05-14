@@ -11,23 +11,24 @@ set -e
 
 echo "=== Setting up Chaotic-AUR ==="
 
-# ── 0. Create alpm user ──────────────────────────────────────────────
-# Post-transaction hooks segfault in mkosi sandbox (systemd utilities),
-# so the alpm user was never created by pacman's sysusers hook.
-# We need it for pacman downloads (DownloadUser = alpm).
-echo ">>> Creating alpm user for pacman downloads..."
-if ! getent group alpm &>/dev/null; then
-    groupadd --system --gid 152 alpm
-fi
-if ! getent passwd alpm &>/dev/null; then
-    useradd --system --uid 152 --gid alpm --shell /usr/bin/nologin \
-        --no-create-home --home-dir /run/alpm alpm
-fi
+# ── 0. Create system users needed by pacman ──────────────────────────
+# Post-transaction hooks often segfault in the mkosi sandbox (systemd
+# utilities can't run without PID 1), so users created by systemd-sysusers
+# hooks might not exist. Create them manually.
+echo ">>> Creating system users for pacman..."
+for _grp in alpm users; do
+    getent group "$_grp" &>/dev/null || groupadd --system "$_grp"
+done
+for _usr in alpm; do
+    if ! getent passwd "$_usr" &>/dev/null; then
+        useradd --system --gid "$_usr" --shell /usr/bin/nologin \
+            --no-create-home --home-dir /run/"$_usr" "$_usr"
+    fi
+done
 mkdir -p /run/alpm
 chown alpm:alpm /run/alpm
 
 # ── 1. Initialize pacman keyring ─────────────────────────────────────
-# mkosi with Debian tools tree doesn't always initialize the pacman keyring.
 echo ">>> Initializing pacman keyring..."
 mkdir -p /etc/pacman.d/gnupg
 chmod 700 /etc/pacman.d/gnupg
@@ -35,6 +36,8 @@ pacman-key --init
 pacman-key --populate archlinux
 
 # ── 2. Initialize pacman databases ───────────────────────────────────
+echo ">>> Mirrorlist:"
+cat /etc/pacman.d/mirrorlist 2>/dev/null || echo "(no mirrorlist found)"
 echo ">>> Syncing pacman databases..."
 pacman -Sy --noconfirm
 
