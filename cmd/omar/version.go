@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/nevotheless/omar/internal/image"
+	"github.com/spf13/cobra"
 )
 
 type versionOutput struct {

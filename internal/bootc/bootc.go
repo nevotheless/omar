@@ -8,9 +8,9 @@ import (
 )
 
 type Status struct {
-	Booted   *Deployment  `json:"booted"`
-	Staged   *Deployment  `json:"staged,omitempty"`
-	Rollback *Deployment  `json:"rollback,omitempty"`
+	Booted   *Deployment `json:"booted"`
+	Staged   *Deployment `json:"staged,omitempty"`
+	Rollback *Deployment `json:"rollback,omitempty"`
 }
 
 type Deployment struct {

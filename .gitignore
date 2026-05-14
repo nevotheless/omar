@@ -5,3 +5,5 @@ mkosi.builddir/
 *.qcow2
 *.img
 *.iso
+coverage.out
+coverage.html

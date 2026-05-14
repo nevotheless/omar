@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/spf13/cobra"
 	"github.com/nevotheless/omar/internal/pkg"
+	"github.com/spf13/cobra"
 )
 
 func newPkgCmd() *cobra.Command {
