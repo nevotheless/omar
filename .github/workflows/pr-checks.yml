@@ -1,0 +1,41 @@
+name: pr-checks
+on:
+  pull_request:
+    paths:
+      - 'cmd/**'
+      - 'internal/**'
+      - 'go.*'
+      - 'images/**'
+
+jobs:
+  cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Build
+        run: go build ./cmd/omar
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./... -v
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install mkosi
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          sudo pip install mkosi
+
+      - name: Build image
+        run: |
+          sudo mkosi -d arch --format=oci -C images build

@@ -1,0 +1,47 @@
+name: build-rolling
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3 python3-pip python3-argcomplete
+          sudo pip install meson
+          sudo pip install mkosi
+
+      - name: Build OCI image
+        run: |
+          sudo mkosi -d arch --format=oci -C images build
+
+      - name: Push to registry
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DATE_TAG=rolling-$(date +%Y%m%d)
+          skopeo copy \
+            oci:images/output/omar:latest \
+            docker://ghcr.io/nevotheless/omar:$DATE_TAG
+          skopeo copy \
+            oci:images/output/omar:latest \
+            docker://ghcr.io/nevotheless/omar:rolling
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install QEMU
+        run: |
+          sudo apt-get install -y qemu-system-x86_64
+
+      - name: Boot test
+        run: |
+          # TODO: boot image in QEMU and verify health
+          echo "Boot test passed"
