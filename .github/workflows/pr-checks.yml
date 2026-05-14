@@ -42,8 +42,15 @@ jobs:
           VARIANT=hyprland ./images/generate-package-configs.sh
           VARIANT=omarchy ./images/generate-package-configs.sh
 
+      - name: Clean mkosi build artifacts (disk space)
+        run: |
+          sudo rm -rf images/mkosi.cache images/mkosi.builddir images/output
+          # Free up runner disk space
+          sudo apt-get clean
+          df -h /
+
       - name: Build image (omarchy variant)
         run: |
           VARIANT=omarchy ./images/generate-package-configs.sh
-          sudo mkosi -d arch --format=oci -C images build
+          sudo mkosi -d arch --format=oci -C images build --incremental=no
         timeout-minutes: 30
