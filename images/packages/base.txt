@@ -3,8 +3,6 @@ linux-firmware
 amd-ucode
 intel-ucode
 systemd
-systemd-boot
-systemd-ukify
 dbus-broker
 udev
 btrfs-progs
@@ -19,3 +17,6 @@ pacman-contrib
 base-devel
 git
 vim
+# Dependencies for postinst (Chaotic-AUR key import, URL downloads)
+gnupg
+curl

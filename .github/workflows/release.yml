@@ -6,13 +6,54 @@ on:
 
 env:
   VERSION: ${{ github.ref_name }}
+  REGISTRY: ghcr.io/nevotheless/omar
 
 jobs:
-  release:
+  images:
+    strategy:
+      matrix:
+        variant: [base, hyprland, omarchy]
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
+      contents: read
       packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install OCI build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-pip python3-argcomplete \
+            systemd-container skopeo debian-archive-keyring ubuntu-keyring
+          sudo pip3 install git+https://github.com/systemd/mkosi.git
+
+      - name: Build ${{ matrix.variant }} image
+        run: |
+          VARIANT=${{ matrix.variant }} ./images/generate-package-configs.sh
+          sudo mkosi -d arch --format=oci -C images \
+            --image-id=omar-${{ matrix.variant }} \
+            --output-directory=output-${{ matrix.variant }} \
+            --image-tag=${VERSION} \
+            build
+        timeout-minutes: 30
+
+      - name: Push ${{ matrix.variant }} image
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          skopeo copy \
+            oci:images/output-${{ matrix.variant }}/omar-${{ matrix.variant }}:${VERSION} \
+            docker://${REGISTRY}:${{ matrix.variant }}-${VERSION}
+          skopeo copy \
+            oci:images/output-${{ matrix.variant }}/omar-${{ matrix.variant }}:${VERSION} \
+            docker://${REGISTRY}:${{ matrix.variant }}-latest
+
+  release:
+    runs-on: ubuntu-24.04
+    needs: [images]
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -26,34 +67,6 @@ jobs:
               -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=${VERSION}'" \
               -o omar-linux-${arch} ./cmd/omar
           done
-
-      - name: Install OCI build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            python3-pip python3-argcomplete \
-            systemd-container skopeo debian-archive-keyring ubuntu-keyring
-          sudo pip3 install git+https://github.com/systemd/mkosi.git
-
-      - name: Build OCI image
-        run: |
-          sudo mkosi -d arch --format=oci \
-            -C images \
-            --image-tag=${VERSION} \
-            build
-        timeout-minutes: 30
-
-      - name: Push image to registry
-        env:
-          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          IMAGE="ghcr.io/nevotheless/omar"
-          skopeo copy \
-            oci:images/output/omar:${VERSION} \
-            docker://${IMAGE}:${VERSION}
-          skopeo copy \
-            oci:images/output/omar:${VERSION} \
-            docker://${IMAGE}:latest
 
       - name: Create release
         uses: softprops/action-gh-release@v2

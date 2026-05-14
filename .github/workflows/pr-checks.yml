@@ -36,7 +36,21 @@ jobs:
           sudo apt-get install -y python3-pip python3-argcomplete systemd-container debian-archive-keyring ubuntu-keyring
           sudo pip3 install git+https://github.com/systemd/mkosi.git
 
-      - name: Build image
+      - name: Verify package config generation (all variants)
         run: |
-          sudo mkosi -d arch --format=oci -C images build
+          VARIANT=base   ./images/generate-package-configs.sh
+          VARIANT=hyprland ./images/generate-package-configs.sh
+          VARIANT=omarchy ./images/generate-package-configs.sh
+
+      - name: Clean mkosi build artifacts (disk space)
+        run: |
+          sudo rm -rf images/mkosi.cache images/mkosi.builddir images/output
+          # Free up runner disk space
+          sudo apt-get clean
+          df -h /
+
+      - name: Build image (base variant)
+        run: |
+          VARIANT=base ./images/generate-package-configs.sh
+          sudo mkosi -d arch --format=oci -C images build --incremental=no
         timeout-minutes: 30
