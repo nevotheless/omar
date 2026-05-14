@@ -1,0 +1,7 @@
+bin/
+output/
+mkosi.cache/
+mkosi.builddir/
+*.qcow2
+*.img
+*.iso

@@ -1,0 +1,6 @@
+omarchy
+omarchy-themes
+omarchy-config-core
+omarchy-config-hyprland
+omarchy-config-waybar
+omarchy-config-mako
