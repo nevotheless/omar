@@ -1,5 +1,7 @@
 # omar — Immutable OCI-Image-Based omarchy OS
 
+Version: **2026.5.0** (CalVer – Jahr.Monat.Patch)
+
 omar baut **täglich** ein bootbares OCI-Image aus Arch Linux + [omarchy](https://omarchy.org/)
 und stellt es via `ghcr.io` bereit. Das CLI `omar` verwaltet Conversion, Updates und Rollback.
 
@@ -70,8 +72,11 @@ Täglicher Cron (06:00 UTC) in `.github/workflows/build-rolling.yml`:
 ## Entwicklung
 
 ```bash
-# CLI bauen
-go build ./cmd/omar
+# CLI bauen (mit Version)
+make build VERSION=2026.5.0-dev
+
+# oder direkt
+go build -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=2026.5.0-dev'" -o bin/omar ./cmd/omar
 
 # CLI testen
 go test ./...

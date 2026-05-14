@@ -4,9 +4,15 @@ on:
     tags:
       - 'v*'
 
+env:
+  VERSION: ${{ github.ref_name }}
+
 jobs:
   release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -15,8 +21,31 @@ jobs:
 
       - name: Build binaries
         run: |
-          GOOS=linux GOARCH=amd64 go build -o omar-linux-amd64 ./cmd/omar
-          GOOS=linux GOARCH=arm64 go build -o omar-linux-arm64 ./cmd/omar
+          for arch in amd64 arm64; do
+            GOOS=linux GOARCH=$arch go build \
+              -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=${VERSION}'" \
+              -o omar-linux-${arch} ./cmd/omar
+          done
+
+      - name: Build OCI image
+        run: |
+          sudo apt-get update && sudo pip install mkosi
+          sudo mkosi -d arch --format=oci \
+            -C images \
+            --image-tag=${VERSION} \
+            build
+
+      - name: Push image to registry
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IMAGE="ghcr.io/nevotheless/omar"
+          skopeo copy \
+            oci:images/output/omar:${VERSION} \
+            docker://${IMAGE}:${VERSION}
+          skopeo copy \
+            oci:images/output/omar:${VERSION} \
+            docker://${IMAGE}:latest
 
       - name: Create release
         uses: softprops/action-gh-release@v2

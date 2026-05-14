@@ -1,9 +1,9 @@
+VERSION ?= 2026.5.0-dev
+
 .PHONY: build test clean lint image
 
-BINARY=omar
-
 build:
-	go build -o bin/$(BINARY) ./cmd/omar
+	go build -ldflags="-X 'github.com/nevotheless/omar/internal/version.Version=$(VERSION)'" -o bin/omar ./cmd/omar
 
 test:
 	go test ./... -v
@@ -15,7 +15,7 @@ clean:
 	rm -rf bin/ output/
 
 image:
-	sudo mkosi -d arch --format=oci -C images build
+	sudo mkosi -d arch --format=oci -C images --image-tag=v$(VERSION) build
 
 image-shell:
 	sudo mkosi -d arch -C images shell

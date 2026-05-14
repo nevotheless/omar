@@ -4,14 +4,28 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/nevotheless/omar/internal/update"
 )
 
 func newUpdateCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "update",
 		Short: "Check for and apply image updates",
+		Long: `Pulls the latest OCI image from the registry, stages it atomically,
+and prompts for reboot. The previous image remains as rollback option.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Println("Checking for updates...")
+			status, err := update.Check()
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("Current: %s\n", status.Current)
+			_ = status
+
+			fmt.Println()
+			if err := update.Apply(); err != nil {
+				return err
+			}
 			return nil
 		},
 	}

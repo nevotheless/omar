@@ -9,10 +9,12 @@ import (
 func main() {
 	root := &cobra.Command{
 		Use:   "omar",
-		Short: "Immutable OCI-image-based omarchy OS",
+		Short: "Immutable OCI-image-based OS – atomic updates for omarchy",
 		Long: `omar manages atomic, image-based updates for omarchy.
-It converts existing mutable systems to immutable, handles daily OCI image updates,
-and wraps Flatpak/Distrobox for user package management.`,
+
+It converts existing mutable systems to immutable, handles daily OCI image
+updates via bootc, and wraps Flatpak/Distrobox for user package management.`,
+		SilenceUsage: true,
 	}
 
 	root.AddCommand(newInstallCmd())
