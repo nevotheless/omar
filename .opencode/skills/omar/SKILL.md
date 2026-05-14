@@ -49,8 +49,9 @@ omar/
 
 ## Status
 
-Done: CLI skeleton, internal packages, mkosi config, CI/CD, devcontainer, issue helper, CalVer.
-Open: Build first OCI image, fresh install, registry check, docs, image variants.
+Done: CLI skeleton, internal packages, mkosi config, CI/CD, devcontainer, issue helper, CalVer,
+install --fresh (bootc install), update registry check, version --json.
+Open: OCI image build (mkosi build test), image variants, docs.
 
 ## Commands
 

@@ -33,14 +33,20 @@ Load the omar skill for full context:
 skill({ name: "omar" })
 ```
 
-## Workflow
+## Workflow – Pull Request basiert
 
-1. Check GitHub Issues: `gh issue list --repo nevotheless/omar`
-2. Create todos: use the `todowrite` tool
-3. Use `sequential-thinking` for complex multi-step planning
-4. Use `pty_spawn`/`pty_write`/`pty_read` for long-running tasks in parallel
-5. Implement, test, commit
-6. Close issues with `Closes #N` in commit messages
+Jede Issue-Implementierung läuft über einen Pull Request:
+
+1. **Issue auswählen**: `gh issue list --repo nevotheless/omar`
+2. **Branch erstellen**: `git checkout -b feat/issue-XX-kurzbeschreibung`
+3. **Planen**: `sequential-thinking` für komplexe Tasks
+4. **Parallele Ausführung**: `pty_spawn`/`pty_write`/`pty_read` + Task Sub-Agents
+5. **Implementieren + Testen**: Code schreiben, Tests laufen lassen
+6. **Committen + Pushen**: mit `Closes #N` in Commit-Message
+7. **PR erstellen**: `gh pr create --title "feat: ..." --body "Closes #N"`
+8. **Nach Merge: Issue automatisch geschlossen**
+
+Wichtig: Commits nie direkt auf master – immer über PRs!
 
 ## Critical paths
 

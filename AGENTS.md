@@ -13,12 +13,17 @@ This file configures the opencode agent for the omar project.
 
 Use **GitHub Issues** as the project management backend.
 
-### Workflow
+### Workflow – Pull Request basiert
 
 1. **Issue erstellen** für jede Aufgabe (enhancement, bug, feature)
 2. **Labels** verwenden: `enhancement`, `bug`, `priority-high`, `good-first-issue`
-3. **Issue schließen** wenn der entsprechende PR gemerged wurde
-4. **Issues referenzieren** in Commit-Nachrichten (`Closes #N`)
+3. **Branch erstellen** vom Issue ausgehend: `feat/issue-XX-kurzbeschreibung`
+4. **Implementieren + Testen** auf dem Branch
+5. **PR erstellen** mit `Closes #N` in der Beschreibung
+6. **Nach PR-Merge** wird das Issue automatisch geschlossen
+7. **Keine Commits direkt auf master** – nur über Pull Requests
+
+### Issue-Format
 
 ### Issue-Format
 
