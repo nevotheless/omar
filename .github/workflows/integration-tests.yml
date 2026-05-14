@@ -60,7 +60,7 @@ jobs:
             --image-id=omar-test \
             --image-version=v${VERSION} \
             -C images build --incremental=no
-        timeout-minutes: 30
+        timeout-minutes: 45
 
       - name: Boot VM and verify serial console output
         timeout-minutes: 4
